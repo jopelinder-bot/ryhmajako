@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RyhmäJako</title>
+  <title>Ryhmäjako</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -95,6 +95,10 @@ const otsikkoStyle = {
   fontSize: 13, fontWeight: 700, color: "#888",
   letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 12,
 };
+const numBtnS = {
+  background:"#1e2130", border:"1px solid #2a2d3e", borderRadius:6,
+  color:"#ccc", cursor:"pointer", fontSize:15, width:28, height:28,
+};
 
 function NimiInput({ alkuarvo, onValmis }) {
   const [arvo, setArvo] = useState(alkuarvo);
@@ -132,87 +136,6 @@ function soitaMerkkiaani() {
   } catch(e) {}
 }
 
-function KiertoSaadin({ arvo, min, max, onChange }) {
-  const kankRef = useRef(null);
-  const vetaRef = useRef(null);
-
-  const kulma = (v) => -135 + ((v - min) / (max - min)) * 270;
-
-  const aloitaVeto = (e) => {
-    e.preventDefault();
-    const alku = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
-    const alkuArvo = arvo;
-    const liiku = (ev) => {
-      const y = ev.type === "touchmove" ? ev.touches[0].clientY : ev.clientY;
-      const delta = Math.round((alku - y) / 3);
-      const uusi = Math.min(max, Math.max(min, alkuArvo + delta));
-      onChange(uusi);
-    };
-    const lopeta = () => {
-      window.removeEventListener("mousemove", liiku);
-      window.removeEventListener("mouseup", lopeta);
-      window.removeEventListener("touchmove", liiku);
-      window.removeEventListener("touchend", lopeta);
-    };
-    window.addEventListener("mousemove", liiku);
-    window.addEventListener("mouseup", lopeta);
-    window.addEventListener("touchmove", liiku, { passive: false });
-    window.addEventListener("touchend", lopeta);
-  };
-
-  const pyorita = (e) => {
-    const delta = e.deltaY < 0 ? 1 : -1;
-    onChange(Math.min(max, Math.max(min, arvo + delta)));
-    e.preventDefault();
-  };
-
-  const size = 130;
-  const cx = size / 2, cy = size / 2, r = 48;
-  const asteet = kulma(arvo);
-  const rad = (asteet * Math.PI) / 180;
-  const viivaPx = cx + (r - 10) * Math.sin(rad);
-  const viivaPy = cy - (r - 10) * Math.cos(rad);
-  const viivaPx2 = cx + r * Math.sin(rad);
-  const viivaPy2 = cy - r * Math.cos(rad);
-
-  // Kaari taustaympyrästä
-  const kaaresta = (-135 * Math.PI) / 180;
-  const kaariin = (asteet * Math.PI) / 180;
-  const isArc = 270 * ((arvo - min) / (max - min)) > 180 ? 1 : 0;
-  const ax1 = cx + r * Math.sin(kaaresta), ay1 = cy - r * Math.cos(kaaresta);
-  const ax2 = cx + r * Math.sin(kaariin), ay2 = cy - r * Math.cos(kaariin);
-
-  return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, userSelect:"none" }}>
-      <svg ref={kankRef} width={size} height={size}
-        style={{ cursor:"ns-resize", touchAction:"none" }}
-        onMouseDown={aloitaVeto} onTouchStart={aloitaVeto} onWheel={pyorita}>
-        {/* Tausta */}
-        <circle cx={cx} cy={cy} r={r+8} fill="#1a1d2e" />
-        <circle cx={cx} cy={cy} r={r} fill="#0f1117" stroke="#2a2d3e" strokeWidth={3} />
-        {/* Taustakaari */}
-        <path d={`M ${cx + r * Math.sin(kaaresta)} ${cy - r * Math.cos(kaaresta)} A ${r} ${r} 0 1 1 ${cx + r * Math.sin((135*Math.PI/180))} ${cy - r * Math.cos((135*Math.PI/180))}`}
-          fill="none" stroke="#2a2d3e" strokeWidth={4} strokeLinecap="round" />
-        {/* Aktiivinen kaari */}
-        {arvo > min && (
-          <path d={`M ${ax1} ${ay1} A ${r} ${r} 0 ${isArc} 1 ${ax2} ${ay2}`}
-            fill="none" stroke="url(#kg)" strokeWidth={4} strokeLinecap="round" />
-        )}
-        <defs>
-          <linearGradient id="kg" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#6c63ff" />
-            <stop offset="100%" stopColor="#4ecdc4" />
-          </linearGradient>
-        </defs>
-        {/* Osoitin */}
-        <line x1={viivaPx} y1={viivaPy} x2={viivaPx2} y2={viivaPy2}
-          stroke="#fff" strokeWidth={3} strokeLinecap="round" />
-      </svg>
-      <div style={{ fontSize:22, fontWeight:800, color:"#fff" }}>{arvo} <span style={{ fontSize:14, fontWeight:400, color:"#888" }}>min</span></div>
-      <div style={{ fontSize:11, color:"#555" }}>Vedä ylös/alas tai rullaa</div>
-    </div>
-  );
-}
 
 function App() {
   const [data, setData] = useState(() => loadData());
@@ -222,12 +145,16 @@ function App() {
   const [uusiOppilas, setUusiOppilas] = useState("");
   const [bulkTeksti, setBulkTeksti] = useState("");
   const [ryhmaKoko, setRyhmaKoko] = useState(3);
+  const [ryhmajakoTapa, setRyhmajakoTapa] = useState("koko"); // "koko" | "maara"
+  const [ryhmaMaara, setRyhmaMaara] = useState(4);
   const [ryhmat, setRyhmat] = useState([]);
   const [drag, setDrag] = useState(null);
   const [tallennusNimi, setTallennusNimi] = useState("");
   const [tallennusVirhe, setTallennusVirhe] = useState("");
   const [nimeaId, setNimeaId] = useState(null);
   const [tallennusOk, setTallennusOk] = useState(false);
+  const [tehtavatTeksti, setTehtavatTeksti] = useState("");
+  const [ryhmaTehtavat, setRyhmaTehtavat] = useState([]); // per ryhmä, sama indeksi
 
   // Ajastin
   const [timerMinuutit, setTimerMinuutit] = useState(5);
@@ -313,13 +240,17 @@ function App() {
   };
   const teeRyhmat = () => {
     if (oppilaat.length < 2) return;
-    const n = Math.max(2, Math.round(oppilaat.length / ryhmaKoko));
+    const n = ryhmajakoTapa === "maara"
+      ? Math.min(ryhmaMaara, oppilaat.length)
+      : Math.max(2, Math.round(oppilaat.length / ryhmaKoko));
     setRyhmat(makeGroups(oppilaat, n));
+    setRyhmaTehtavat([]);
     setTallennusNimi(""); setTallennusVirhe(""); setTallennusOk(false);
     setNakyma("ryhmat");
   };
   const sekoitaUudelleen = () => {
     setRyhmat(makeGroups(oppilaat, ryhmat.length));
+    setRyhmaTehtavat([]);
     setTallennusOk(false);
   };
 
@@ -348,7 +279,7 @@ function App() {
     if (nykyiset[nimi] && !window.confirm(`Korvataanko "${nimi}"?`)) return;
     paivita({ ...data, [valittuLuokka]: { ...ld, tallennetut: {
       ...nykyiset,
-      [nimi]: { ryhmat, luotu: new Date().toLocaleDateString("fi-FI") }
+      [nimi]: { ryhmat, tehtavat: ryhmaTehtavat, luotu: new Date().toLocaleDateString("fi-FI") }
     }}});
     setTallennusVirhe(""); setTallennusOk(true);
   };
@@ -361,7 +292,7 @@ function App() {
   const avaaRyhmat = (nimi) => {
     const jaot = tallennetut[nimi];
     if (!jaot) return;
-    setRyhmat(jaot.ryhmat); setTallennusNimi(nimi); setTallennusVirhe(""); setTallennusOk(true);
+    setRyhmat(jaot.ryhmat); setRyhmaTehtavat(jaot.tehtavat||[]); setTallennusNimi(nimi); setTallennusVirhe(""); setTallennusOk(true);
     setNakyma("ryhmat");
   };
   const nimeaUudelleen = (vanha, uusi) => {
@@ -393,7 +324,7 @@ function App() {
           fontSize:18, cursor:"pointer",
         }}>🎲</div>
         <div>
-          <div style={{ fontWeight:700, fontSize:16 }}>RyhmäJako</div>
+          <div style={{ fontWeight:700, fontSize:16 }}>Ryhmäjako</div>
           <div style={{ fontSize:11, color:"#888" }}>satunnaiset ryhmät oppitunneille</div>
         </div>
         {valittuLuokka && nakyma !== "etusivu" && (
@@ -472,23 +403,65 @@ function App() {
                 <div style={{ color:"#888", fontSize:12 }}>{oppilaat.length} oppilasta</div>
               </div>
             </div>
-            <div className="no-print" style={korttiStyle}>
-              <div style={otsikkoStyle}>Lisää oppilas</div>
-              <div style={{ display:"flex", gap:8 }}>
-                <input value={uusiOppilas} onChange={e=>setUusiOppilas(e.target.value)}
-                  onKeyDown={e=>e.key==="Enter"&&lisaaOppilas()}
-                  placeholder="Oppilaan nimi" style={{ ...inputStyle, flex:1 }} />
-                <Btn onClick={lisaaOppilas}>Lisää</Btn>
+
+            {/* Ryhmäjako ensin */}
+            {oppilaat.length>=2 && (
+              <div className="no-print" style={korttiStyle}>
+                <div style={otsikkoStyle}>Uusi ryhmäjako</div>
+                {/* Tapa-valinta */}
+                <div style={{ display:"flex", gap:6, marginBottom:14 }}>
+                  {[["koko","Ryhmän koko"],["maara","Ryhmien lukumäärä"]].map(([tapa, label]) => (
+                    <button key={tapa} onClick={() => setRyhmajakoTapa(tapa)} style={{
+                      background: ryhmajakoTapa===tapa ? "linear-gradient(135deg,#6c63ff,#4ecdc4)" : "#0f1117",
+                      border: `1px solid ${ryhmajakoTapa===tapa ? "#6c63ff" : "#2a2d3e"}`,
+                      borderRadius:8, color: ryhmajakoTapa===tapa ? "#fff" : "#888",
+                      padding:"6px 14px", fontSize:13, fontWeight:600, cursor:"pointer",
+                    }}>{label}</button>
+                  ))}
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:14, flexWrap:"wrap" }}>
+                  {ryhmajakoTapa === "koko" ? (
+                    <>
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <label style={{ color:"#aaa", fontSize:13 }}>Oppilaita per ryhmä:</label>
+                        <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                          <button onClick={() => setRyhmaKoko(k=>Math.max(2,k-1))} style={numBtnS}>−</button>
+                          <span style={{ fontWeight:700, fontSize:17, minWidth:22, textAlign:"center" }}>{ryhmaKoko}</span>
+                          <button onClick={() => setRyhmaKoko(k=>Math.min(oppilaat.length,k+1))} style={numBtnS}>+</button>
+                        </div>
+                      </div>
+                      <div style={{ color:"#888", fontSize:12 }}>→ n. {Math.round(oppilaat.length/ryhmaKoko)} ryhmää</div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <label style={{ color:"#aaa", fontSize:13 }}>Ryhmien lukumäärä:</label>
+                        <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                          <button onClick={() => setRyhmaMaara(k=>Math.max(2,k-1))} style={numBtnS}>−</button>
+                          <span style={{ fontWeight:700, fontSize:17, minWidth:22, textAlign:"center" }}>{Math.min(ryhmaMaara, oppilaat.length)}</span>
+                          <button onClick={() => setRyhmaMaara(k=>Math.min(oppilaat.length,k+1))} style={numBtnS}>+</button>
+                        </div>
+                      </div>
+                      <div style={{ color:"#888", fontSize:12 }}>→ n. {Math.round(oppilaat.length/Math.min(ryhmaMaara,oppilaat.length))} per ryhmä</div>
+                    </>
+                  )}
+                  <Btn accent onClick={teeRyhmat}>🎲 Arvo ryhmät</Btn>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Lisää oppilaita */}
             <div className="no-print" style={korttiStyle}>
-              <div style={otsikkoStyle}>Lisää useita kerralla</div>
-              <div style={{ color:"#888", fontSize:12, marginBottom:8 }}>Yksi nimi per rivi</div>
+              <div style={otsikkoStyle}>Lisää oppilaita</div>
+              <div style={{ color:"#888", fontSize:12, marginBottom:8 }}>Yksi nimi per rivi — tai kirjoita yksi nimi ja paina Lisää</div>
               <textarea value={bulkTeksti} onChange={e=>setBulkTeksti(e.target.value)}
+                onKeyDown={e=>{ if(e.key==="Enter" && e.ctrlKey) lisaaBulk(); }}
                 placeholder={"Matti Meikäläinen\nMaija Virtanen\nPekka Korhonen"}
                 rows={5} style={{ ...inputStyle, width:"100%", resize:"vertical" }} />
-              <div style={{ marginTop:8 }}><Btn onClick={lisaaBulk}>Lisää kaikki</Btn></div>
+              <div style={{ marginTop:8 }}><Btn onClick={lisaaBulk}>Lisää</Btn></div>
             </div>
+
+            {/* Oppilaslistaus */}
             <div style={korttiStyle}>
               <div style={otsikkoStyle}>Oppilaat</div>
               {oppilaat.length===0
@@ -508,26 +481,6 @@ function App() {
                   </div>
               }
             </div>
-            {oppilaat.length>=2 && (
-              <div className="no-print" style={korttiStyle}>
-                <div style={otsikkoStyle}>Uusi ryhmäjako</div>
-                <div style={{ display:"flex", alignItems:"center", gap:14, flexWrap:"wrap" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <label style={{ color:"#aaa", fontSize:13 }}>Ryhmän koko:</label>
-                    <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                      {["-","+"].map((s,idx) => (
-                        <button key={s} onClick={() => setRyhmaKoko(k => idx===0?Math.max(2,k-1):Math.min(10,k+1))} style={{
-                          background:"#1e2130", border:"1px solid #2a2d3e", borderRadius:6,
-                          color:"#ccc", cursor:"pointer", fontSize:15, width:28, height:28,
-                        }}>{s}</button>
-                      )).reduce((a,b,i) => [a, <span key={i} style={{ fontWeight:700, fontSize:17, minWidth:22, textAlign:"center" }}>{ryhmaKoko}</span>, b])}
-                    </div>
-                  </div>
-                  <div style={{ color:"#888", fontSize:12 }}>→ n. {Math.round(oppilaat.length/ryhmaKoko)} ryhmää</div>
-                  <Btn accent onClick={teeRyhmat}>🎲 Arvo ryhmät</Btn>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -600,52 +553,8 @@ function App() {
               <Btn small onClick={() => window.print()}>🖨️ Tulosta</Btn>
             </div>
 
-            {/* Uusi jako -palkki */}
-            <div className="no-print" style={{
-              background:"#1a1d2e", border:"1px solid #2a2d3e",
-              borderRadius:12, padding:"12px 16px",
-              display:"flex", alignItems:"center", gap:12, marginBottom:10, flexWrap:"wrap",
-            }}>
-              <span style={{ color:"#888", fontSize:13, flexShrink:0 }}>🎲 Uusi jako:</span>
-              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ color:"#aaa", fontSize:13 }}>Ryhmän koko</span>
-                <button onClick={() => setRyhmaKoko(k=>Math.max(2,k-1))} style={{
-                  background:"#0f1117", border:"1px solid #2a2d3e", borderRadius:6,
-                  color:"#ccc", cursor:"pointer", fontSize:14, width:26, height:26,
-                }}>−</button>
-                <span style={{ fontWeight:700, fontSize:16, minWidth:20, textAlign:"center" }}>{ryhmaKoko}</span>
-                <button onClick={() => setRyhmaKoko(k=>Math.min(10,k+1))} style={{
-                  background:"#0f1117", border:"1px solid #2a2d3e", borderRadius:6,
-                  color:"#ccc", cursor:"pointer", fontSize:14, width:26, height:26,
-                }}>+</button>
-              </div>
-              <span style={{ color:"#555", fontSize:12 }}>→ n. {Math.round(oppilaat.length/ryhmaKoko)} ryhmää</span>
-              <Btn accent onClick={() => { setRyhmat(makeGroups(oppilaat, Math.max(2,Math.round(oppilaat.length/ryhmaKoko)))); setTallennusOk(false); }}>Arvo</Btn>
-            </div>
-
-            {/* Tallennuspalkki */}
-            <div className="no-print" style={{
-              background:"#1a1d2e", border:"1px solid #2a2d3e",
-              borderRadius:12, padding:"12px 16px",
-              display:"flex", alignItems:"center", gap:10, marginBottom:16, flexWrap:"wrap",
-            }}>
-              <span style={{ color:"#888", fontSize:13, flexShrink:0 }}>💾 Tallenna jako:</span>
-              <input value={tallennusNimi}
-                onChange={e => { setTallennusNimi(e.target.value); setTallennusVirhe(""); setTallennusOk(false); }}
-                onKeyDown={e => e.key==="Enter"&&tallennaRyhmat()}
-                placeholder='esim. "Esitelmäryhmät" tai "Laboratoriotyö 3.2."'
-                style={{ ...inputStyle, flex:1, minWidth:140 }} />
-              <Btn onClick={tallennaRyhmat}>Tallenna</Btn>
-              {tallennusOk && <span style={{ color:"#2ecc71", fontSize:13 }}>✓ Tallennettu</span>}
-              {tallennusVirhe && <span style={{ color:"#e74c3c", fontSize:13 }}>{tallennusVirhe}</span>}
-              {tallennettuLista.length>0 && (
-                <Btn small onClick={() => setNakyma("tallennetut")}>
-                  Kaikki tallennetut ({tallennettuLista.length})
-                </Btn>
-              )}
-            </div>
-
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))", gap:12 }}>
+            {/* Ryhmäkortit */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))", gap:12, marginBottom:14 }}>
               {ryhmat.map((ryhma,ri) => (
                 <div key={ri} className="ryhma-kortti"
                   onDragOver={e=>e.preventDefault()} onDrop={()=>onDropRyhma(ri)}
@@ -656,7 +565,7 @@ function App() {
                   <div className="ryhma-nimi" style={{
                     fontSize:11, fontWeight:700, letterSpacing:1,
                     color:COLORS[ri%COLORS.length], marginBottom:8, textTransform:"uppercase",
-                  }}>Ryhmä {ri+1}</div>
+                  }}>Ryhmä {ri+1}{ryhmaTehtavat[ri] ? ` — ${ryhmaTehtavat[ri]}` : ""}</div>
                   {ryhma.map((oppilas,oi) => (
                     <div key={oi} className="oppilas-tag"
                       draggable
@@ -685,8 +594,96 @@ function App() {
                 </div>
               ))}
             </div>
+
+            {/* Tallennuspalkki */}
+            <div className="no-print" style={{
+              background:"#1a1d2e", border:"1px solid #2a2d3e",
+              borderRadius:12, padding:"12px 16px",
+              display:"flex", alignItems:"center", gap:10, marginBottom:10, flexWrap:"wrap",
+            }}>
+              <span style={{ color:"#888", fontSize:13, flexShrink:0 }}>💾 Tallenna jako:</span>
+              <input value={tallennusNimi}
+                onChange={e => { setTallennusNimi(e.target.value); setTallennusVirhe(""); setTallennusOk(false); }}
+                onKeyDown={e => e.key==="Enter"&&tallennaRyhmat()}
+                placeholder='esim. "Esitelmäryhmät" tai "Laboratoriotyö 3.2."'
+                style={{ ...inputStyle, flex:1, minWidth:140 }} />
+              <Btn onClick={tallennaRyhmat}>Tallenna</Btn>
+              {tallennusOk && <span style={{ color:"#2ecc71", fontSize:13 }}>✓ Tallennettu</span>}
+              {tallennusVirhe && <span style={{ color:"#e74c3c", fontSize:13 }}>{tallennusVirhe}</span>}
+              {tallennettuLista.length>0 && (
+                <Btn small onClick={() => setNakyma("tallennetut")}>
+                  Kaikki tallennetut ({tallennettuLista.length})
+                </Btn>
+              )}
+            </div>
+
+            {/* Tehtävänjako-palkki */}
+            <div className="no-print" style={{
+              background:"#1a1d2e", border:"1px solid #2a2d3e",
+              borderRadius:12, padding:"14px 16px", marginBottom:10,
+            }}>
+              <div style={otsikkoStyle}>Jaa tehtävät tai roolit ryhmille</div>
+              <div style={{ color:"#888", fontSize:12, marginBottom:8 }}>Yksi tehtävä per rivi — sovellus arpoo ne ryhmille</div>
+              <textarea
+                value={tehtavatTeksti}
+                onChange={e => setTehtavatTeksti(e.target.value)}
+                placeholder={"Eurooppa\nAasia\nAfrikka\nAmerikka"}
+                rows={4}
+                style={{ ...inputStyle, width:"100%", resize:"vertical" }}
+              />
+              <div style={{ marginTop:8, display:"flex", gap:8, alignItems:"center" }}>
+                <Btn accent onClick={() => {
+                  const lista = tehtavatTeksti.split("\n").map(s=>s.trim()).filter(Boolean);
+                  if (!lista.length) return;
+                  const arvottu = shuffle(lista);
+                  setRyhmaTehtavat(ryhmat.map((_,ri) => arvottu[ri] || ""));
+                  setTallennusOk(false);
+                }}>🎲 Arvo tehtävät</Btn>
+                {ryhmaTehtavat.some(t=>t) && (
+                  <Btn onClick={() => { setRyhmaTehtavat([]); setTehtavatTeksti(""); }}>✕ Poista tehtävät</Btn>
+                )}
+                {ryhmaTehtavat.some(t=>t) && <span style={{ color:"#2ecc71", fontSize:13 }}>✓ Arvottu</span>}
+              </div>
+            </div>
+
+            {/* Uusi jako -palkki */}
+            <div className="no-print" style={{
+              background:"#1a1d2e", border:"1px solid #2a2d3e",
+              borderRadius:12, padding:"12px 16px",
+              display:"flex", alignItems:"center", gap:12, marginBottom:10, flexWrap:"wrap",
+            }}>
+              <span style={{ color:"#888", fontSize:13, flexShrink:0 }}>🎲 Uusi jako:</span>
+              <div style={{ display:"flex", gap:6 }}>
+                {[["koko","Ryhmän koko"],["maara","Lukumäärä"]].map(([tapa,label]) => (
+                  <button key={tapa} onClick={() => setRyhmajakoTapa(tapa)} style={{
+                    background: ryhmajakoTapa===tapa ? "linear-gradient(135deg,#6c63ff,#4ecdc4)" : "#0f1117",
+                    border: `1px solid ${ryhmajakoTapa===tapa ? "#6c63ff" : "#2a2d3e"}`,
+                    borderRadius:7, color: ryhmajakoTapa===tapa ? "#fff" : "#888",
+                    padding:"4px 10px", fontSize:12, fontWeight:600, cursor:"pointer",
+                  }}>{label}</button>
+                ))}
+              </div>
+              {ryhmajakoTapa === "koko" ? (
+                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                  <span style={{ color:"#aaa", fontSize:13 }}>Per ryhmä</span>
+                  <button onClick={() => setRyhmaKoko(k=>Math.max(2,k-1))} style={numBtnS}>−</button>
+                  <span style={{ fontWeight:700, fontSize:16, minWidth:20, textAlign:"center" }}>{ryhmaKoko}</span>
+                  <button onClick={() => setRyhmaKoko(k=>Math.min(oppilaat.length,k+1))} style={numBtnS}>+</button>
+                </div>
+              ) : (
+                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                  <span style={{ color:"#aaa", fontSize:13 }}>Ryhmää</span>
+                  <button onClick={() => setRyhmaMaara(k=>Math.max(2,k-1))} style={numBtnS}>−</button>
+                  <span style={{ fontWeight:700, fontSize:16, minWidth:20, textAlign:"center" }}>{Math.min(ryhmaMaara,oppilaat.length)}</span>
+                  <button onClick={() => setRyhmaMaara(k=>Math.min(oppilaat.length,k+1))} style={numBtnS}>+</button>
+                </div>
+              )}
+              <span style={{ color:"#555", fontSize:12 }}>→ {ryhmajakoTapa==="koko" ? `n. ${Math.round(oppilaat.length/ryhmaKoko)} ryhmää` : `n. ${Math.round(oppilaat.length/Math.min(ryhmaMaara,oppilaat.length))} per ryhmä`}</span>
+              <Btn accent onClick={() => { setRyhmat(makeGroups(oppilaat, Math.max(2,Math.round(oppilaat.length/ryhmaKoko)))); setTallennusOk(false); }}>Arvo</Btn>
+            </div>
           </div>
         )}
+
         {/* ── AJASTIN ── */}
         {nakyma==="ajastin" && (
           <div>
@@ -735,12 +732,8 @@ function App() {
 
             {/* Säätö — vain kun ajastin ei käynnissä */}
             {timerJaljella === null && (
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:24, marginBottom:28 }}>
-
-                {/* Kiertosäädin */}
-                <KiertoSaadin arvo={timerMinuutit} min={1} max={60} onChange={setTimerMinuutit} />
-
-                {/* Pikanapit */}
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:12, marginBottom:28 }}>
+                {/* Pikavalinnat */}
                 <div style={{ display:"flex", justifyContent:"center", flexWrap:"wrap", gap:8 }}>
                   {[1,2,3,5,10,15,20].map(m => (
                     <button key={m} onClick={() => setTimerMinuutit(m)} style={{
@@ -749,6 +742,16 @@ function App() {
                       borderRadius:8, color: timerMinuutit===m ? "#fff" : "#ccc",
                       padding:"6px 14px", fontSize:14, fontWeight:600, cursor:"pointer",
                     }}>{m} min</button>
+                  ))}
+                </div>
+                {/* Lisäysnapit */}
+                <div style={{ display:"flex", justifyContent:"center", gap:8 }}>
+                  {[1,5,10].map(lisays => (
+                    <button key={lisays} onClick={() => setTimerMinuutit(m => Math.min(60, m + lisays))} style={{
+                      background:"#1a1d2e", border:"1px solid #2a2d3e",
+                      borderRadius:8, color:"#4ecdc4",
+                      padding:"6px 16px", fontSize:14, fontWeight:600, cursor:"pointer",
+                    }}>+{lisays} min</button>
                   ))}
                 </div>
               </div>
